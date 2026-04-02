@@ -40,7 +40,7 @@ contract Othello {
         require(isValidMove(x, y, currentPlayer), "Invalid move");
 
         board[toIndex(x, y)] = currentPlayer;
-        flipPieces(x, y);
+        flipPieces(x, y, currentPlayer);
 
         uint8 nextPlayer = opponent(currentPlayer);
 
@@ -60,7 +60,7 @@ contract Othello {
         // TODO
     }
 
-    function flipPieces(uint8 x, uint8 y) internal {
+    function flipPieces(uint8 x, uint8 y, uint8 player) internal {
         // TODO
     }
 
