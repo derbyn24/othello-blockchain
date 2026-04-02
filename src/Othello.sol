@@ -12,6 +12,8 @@ contract Othello {
     address public playerWhite;
     uint8 public currentPlayer; // 1 for black, 2 for white
 
+    bool public gameOver;
+
     event Move(address indexed player, uint8 x, uint8 y);
 
     constructor(address _playerBlack, address _playerWhite) {
@@ -26,12 +28,56 @@ contract Othello {
         board[toIndex(4, 3)] = BLACK;
     }
 
-    function toIndex(int8 x, int8 y) internal pure returns (uint8) {
+    function makeMove(uint8 x, uint8 y) public {
+        require(x < 8 && y < 8, "Out of bounds");
+        require(board[toIndex(x, y)] == EMPTY, "Space is not empty");
+        require(
+            (currentPlayer == BLACK && msg.sender == playerBlack) ||
+            (currentPlayer == WHITE && msg.sender == playerWhite),
+            "Not your turn"
+        );
+
+        require(isValidMove(x, y), "Invalid move");
+
+        board[toIndex(x, y)] = currentPlayer;
+        flipPieces(x, y);
+
+        uint8 nextPlayer = opponent(currentPlayer);
+
+        if (hasValidMove(nextPlayer)) {
+            currentPlayer = nextPlayer;
+        } else if (hasValidMove(currentPlayer)) {
+            // Opponent has no valid moves, current player goes again
+        } else {
+            // No valid moves for either player, game over
+            gameOver = true;
+        }
+
+        emit Move(msg.sender, x, y);
+    }
+
+    function isValidMove(uint8 x, uint8 y) internal view returns (bool) {
+        // TODO
+    }
+
+    function flipPieces(uint8 x, uint8 y) internal {
+        // TODO
+    }
+
+    function hasValidMove(uint8 player) internal view returns (bool) {
+        // TODO
+    }
+
+    function toIndex(uint8 x, uint8 y) internal pure returns (uint8) {
         return uint8(y * 8 + x);
     }
 
-    function toXY(uint8 index) internal pure returns (int8 x, int8 y) {
-        return (int8(index % 8), int8(index / 8));
+    function toXY(uint8 index) internal pure returns (uint8 x, uint8 y) {
+        return (uint8(index % 8), uint8(index / 8));
+    }
+
+    function opponent(uint8 player) internal pure returns (uint8) {
+        return (player == BLACK) ? WHITE : BLACK;
     }
 }
 
