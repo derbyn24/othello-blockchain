@@ -25,12 +25,13 @@ contract Othello {
         board[toIndex(3, 4)] = BLACK;
         board[toIndex(4, 3)] = BLACK;
     }
+
+    function toIndex(int8 x, int8 y) internal pure returns (uint8) {
+        return uint8(y * 8 + x);
+    }
+
+    function toXY(uint8 index) internal pure returns (int8 x, int8 y) {
+        return (int8(index % 8), int8(index / 8));
+    }
 }
 
-function toIndex(int8 x, int8 y) internal pure returns (uint8) {
-    return uint8(y * 8 + x);
-}
-
-function toXY(uint8 index) internal pure returns (int8 x, int8 y) {
-    return (int8(index % 8), int8(index / 8));
-}
