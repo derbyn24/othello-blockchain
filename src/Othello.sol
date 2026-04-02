@@ -28,16 +28,16 @@ contract Othello {
         board[toIndex(4, 3)] = BLACK;
     }
 
-    function makeMove(uint8 x, uint8 y) public {
+    function makeMove(uint8 x, uint8 y) external {
         require(x < 8 && y < 8, "Out of bounds");
         require(board[toIndex(x, y)] == EMPTY, "Space is not empty");
         require(
-            (currentPlayer == BLACK && msg.sender == playerBlack) 
+            (currentPlayer == BLACK && msg.sender == playerBlack)
                 || (currentPlayer == WHITE && msg.sender == playerWhite),
             "Not your turn"
         );
 
-        require(isValidMove(x, y), "Invalid move");
+        require(isValidMove(x, y, currentPlayer), "Invalid move");
 
         board[toIndex(x, y)] = currentPlayer;
         flipPieces(x, y);
@@ -56,7 +56,7 @@ contract Othello {
         emit Move(msg.sender, x, y);
     }
 
-    function isValidMove(uint8 x, uint8 y) internal view returns (bool) {
+    function isValidMove(uint8 x, uint8 y, uint8 player) internal view returns (bool) {
         // TODO
     }
 
@@ -65,7 +65,14 @@ contract Othello {
     }
 
     function hasValidMove(uint8 player) internal view returns (bool) {
-        // TODO
+        for (uint8 x = 0; x < 8; x++) {
+            for (uint8 y = 0; y < 8; y++) {
+                if (board[toIndex(x, y)] == EMPTY && isValidMove(x, y, player)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     function toIndex(uint8 x, uint8 y) internal pure returns (uint8) {
