@@ -32,8 +32,8 @@ contract Othello {
         require(x < 8 && y < 8, "Out of bounds");
         require(board[toIndex(x, y)] == EMPTY, "Space is not empty");
         require(
-            (currentPlayer == BLACK && msg.sender == playerBlack) ||
-            (currentPlayer == WHITE && msg.sender == playerWhite),
+            (currentPlayer == BLACK && msg.sender == playerBlack) 
+                || (currentPlayer == WHITE && msg.sender == playerWhite),
             "Not your turn"
         );
 
