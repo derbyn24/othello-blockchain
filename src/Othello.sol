@@ -12,7 +12,14 @@ contract Othello {
     address public playerWhite;
     uint8 public currentPlayer; // 1 for black, 2 for white
 
-    bool public gameOver;
+    enum GameResult {
+        Ongoing,
+        BlackWin,
+        WhiteWin,
+        Draw
+    }
+
+    GameResult public result;
 
     event Move(address indexed player, uint8 x, uint8 y);
 
@@ -20,6 +27,8 @@ contract Othello {
         playerBlack = _playerBlack;
         playerWhite = _playerWhite;
         currentPlayer = BLACK;
+
+        result = GameResult.Ongoing;
 
         // Initialize the board with the starting position
         board[toIndex(3, 3)] = WHITE;
@@ -29,7 +38,7 @@ contract Othello {
     }
 
     function makeMove(uint8 x, uint8 y) external {
-        require(!gameOver, "Game is over");
+        require(result == GameResult.Ongoing, "Game is over");
         require(x < 8 && y < 8, "Out of bounds");
         require(board[toIndex(x, y)] == EMPTY, "Space is not empty");
         require(
@@ -50,8 +59,16 @@ contract Othello {
         } else if (hasValidMove(currentPlayer)) {
             // Opponent has no valid moves, current player goes again
         } else {
-            // No valid moves for either player, game over
-            gameOver = true;
+            // No valid moves for either player, game over, calculate winner
+            (uint8 blackScore, uint8 whiteScore) = getScore();
+
+            if (blackScore > whiteScore) {
+                result = GameResult.BlackWin;
+            } else if (whiteScore > blackScore) {
+                result = GameResult.WhiteWin;
+            } else {
+                result = GameResult.Draw;
+            }
         }
 
         emit Move(msg.sender, x, y);
@@ -139,6 +156,26 @@ contract Othello {
         }
         return false;
     }
+
+    function getScore() public view returns (uint8 blackScore, uint8 whiteScore) {
+        for (uint8 i = 0; i < 64; i++) {
+            if (board[i] == BLACK) blackScore++;
+            else if (board[i] == WHITE) whiteScore++;
+        }
+    }
+
+    function getWinnerAddress() public view returns (address) {
+        require(result != GameResult.Ongoing, "Game is not over yet");
+        if (result == GameResult.BlackWin) return playerBlack;
+        if (result == GameResult.WhiteWin) return playerWhite;
+        return address(0); // draw
+    }
+
+    function isGameOver() public view returns (bool) {
+        return result != GameResult.Ongoing;
+    }
+
+    // BASIC HELPER FUNCTIONS
 
     function toIndex(uint8 x, uint8 y) internal pure returns (uint8) {
         return uint8(y * 8 + x);

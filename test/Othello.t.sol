@@ -61,7 +61,7 @@ contract OthelloTest is Test {
 
         // Check center squares are not empty
         assertEq(game.currentPlayer(), BLACK);
-        assertEq(game.gameOver(), false);
+        assertEq(game.isGameOver(), false);
     }
 
     function test_ValidFirstMove() public {
@@ -283,7 +283,7 @@ contract OthelloTest is Test {
         assertEq(game.currentPlayer(), BLACK);
     }
 
-    function test_GameOverWhenBoardIsFull() public {
+    function test_GameOver() public {
         uint8[64] memory b;
 
         // Fill board with BLACK
@@ -293,8 +293,8 @@ contract OthelloTest is Test {
 
         // Create a small valid flip scenario
         // Row: B W .  → play at (2,0)
-        b[toIndex(1,0)] = WHITE;
-        b[toIndex(2,0)] = EMPTY;
+        b[toIndex(1, 0)] = WHITE;
+        b[toIndex(2, 0)] = EMPTY;
 
         game.setBoard(b);
         game.setCurrentPlayer(BLACK);
@@ -302,7 +302,7 @@ contract OthelloTest is Test {
         printBoard(); // before
 
         vm.prank(playerBlack);
-        game.makeMove(2,0);
+        game.makeMove(2, 0);
 
         printBoard(); // after
 
@@ -310,6 +310,23 @@ contract OthelloTest is Test {
         // - Board is effectively all BLACK
         // - No valid moves for either player
 
-        assertEq(game.gameOver(), true);
+        assertEq(game.isGameOver(), true);
+        address winner = game.getWinnerAddress();
+        assertEq(winner, playerBlack);
+    }
+
+    function test_GetScore() public {
+        uint8[64] memory b;
+
+        b[toIndex(0, 0)] = BLACK;
+        b[toIndex(1, 0)] = BLACK;
+        b[toIndex(2, 0)] = WHITE;
+
+        game.setBoard(b);
+
+        (uint8 blackCount, uint8 whiteCount) = game.getScore();
+
+        assertEq(blackCount, 2);
+        assertEq(whiteCount, 1);
     }
 }
