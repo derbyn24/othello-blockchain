@@ -58,19 +58,19 @@ contract Othello {
 
     function isValidMove(uint8 x, uint8 y, uint8 player) internal view returns (bool) {
         uint8 opponent_player = opponent(player);
-        
+
         // 8 directions: right, left, down, up, down-right, down-left, up-right, up-left
         int8[8] memory dx = [int8(1), int8(-1), int8(0), int8(0), int8(1), int8(-1), int8(1), int8(-1)];
         int8[8] memory dy = [int8(0), int8(0), int8(1), int8(-1), int8(1), int8(1), int8(-1), int8(-1)];
-        
+
         for (uint8 dir = 0; dir < 8; dir++) {
             int8 nx = int8(x) + dx[dir];
             int8 ny = int8(y) + dy[dir];
             bool foundOpponent = false;
-            
+
             while (nx >= 0 && nx < 8 && ny >= 0 && ny < 8) {
                 uint8 piece = board[toIndex(uint8(nx), uint8(ny))];
-                
+
                 if (piece == opponent_player) {
                     foundOpponent = true;
                 } else if (piece == player && foundOpponent) {
@@ -78,33 +78,33 @@ contract Othello {
                 } else {
                     break;
                 }
-                
+
                 nx += dx[dir];
                 ny += dy[dir];
             }
         }
-        
+
         return false;
     }
 
     function flipPieces(uint8 x, uint8 y, uint8 player) internal {
         uint8 opponent_player = opponent(player);
-        
+
         // 8 directions
         int8[8] memory dx = [int8(1), int8(-1), int8(0), int8(0), int8(1), int8(-1), int8(1), int8(-1)];
         int8[8] memory dy = [int8(0), int8(0), int8(1), int8(-1), int8(1), int8(1), int8(-1), int8(-1)];
-        
+
         for (uint8 dir = 0; dir < 8; dir++) {
             int8 nx = int8(x) + dx[dir];
             int8 ny = int8(y) + dy[dir];
-            
+
             bool foundOpponent = false;
             uint256 piecesToFlip = 0;
-            
+
             // First pass: count opponent pieces
             while (nx >= 0 && nx < 8 && ny >= 0 && ny < 8) {
                 uint8 piece = board[toIndex(uint8(nx), uint8(ny))];
-                
+
                 if (piece == opponent_player) {
                     foundOpponent = true;
                     piecesToFlip++;
@@ -121,7 +121,7 @@ contract Othello {
                 } else {
                     break;
                 }
-                
+
                 nx += dx[dir];
                 ny += dy[dir];
             }

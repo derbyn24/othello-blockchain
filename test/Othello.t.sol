@@ -3,9 +3,22 @@ pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 import {Othello} from "../src/Othello.sol";
+import "forge-std/console.sol";
+
+contract TestableOthello is Othello {
+    constructor(address b, address w) Othello(b, w) {}
+
+    function setBoard(uint8[64] memory newBoard) public {
+        board = newBoard;
+    }
+
+    function setCurrentPlayer(uint8 p) public {
+        currentPlayer = p;
+    }
+}
 
 contract OthelloTest is Test {
-    Othello public game;
+    TestableOthello public game;
     address public playerBlack = address(0x1);
     address public playerWhite = address(0x2);
 
@@ -14,8 +27,30 @@ contract OthelloTest is Test {
     uint8 constant WHITE = 2;
 
     function setUp() public {
-        game = new Othello(playerBlack, playerWhite);
+        game = new TestableOthello(playerBlack, playerWhite);
     }
+
+    // HELPER FUNCTIONS
+
+    function toIndex(uint8 x, uint8 y) internal pure returns (uint8) {
+        return uint8(y * 8 + x);
+    }
+
+    function printBoard() public view {
+        for (uint8 y = 0; y < 8; y++) {
+            string memory row = "";
+            for (uint8 x = 0; x < 8; x++) {
+                uint8 val = game.board(toIndex(x, y));
+                if (val == EMPTY) row = string.concat(row, ". ");
+                else if (val == BLACK) row = string.concat(row, "B ");
+                else row = string.concat(row, "W ");
+            }
+            console.log(row);
+        }
+        console.log("----------------");
+    }
+
+    // TESTS
 
     function test_InitialBoardSetup() public view {
         // Check starting position
@@ -33,7 +68,7 @@ contract OthelloTest is Test {
         // Black should be able to move to (3, 2)
         vm.prank(playerBlack);
         game.makeMove(3, 2);
-        
+
         assertEq(game.board(toIndex(3, 2)), BLACK);
         assertEq(game.board(toIndex(3, 3)), BLACK); // Should be flipped
         assertEq(game.currentPlayer(), WHITE);
@@ -43,7 +78,7 @@ contract OthelloTest is Test {
         // Black makes first move at (3, 2)
         vm.prank(playerBlack);
         game.makeMove(3, 2);
-        
+
         // Verify that (3, 3) was flipped from WHITE to BLACK
         assertEq(game.board(toIndex(3, 3)), BLACK);
     }
@@ -98,17 +133,22 @@ contract OthelloTest is Test {
         // Black at (2, 3)
         // This should flip white piece at (3, 3) when Black places at (4, 3) - wait that's occupied
         // Let me test a different scenario
-        
+
         // Initial: 3,3=WHITE, 4,4=WHITE, 3,4=BLACK, 4,3=BLACK
         // After Black at (3,2): 3,2=BLACK, 3,3=BLACK (flipped)
         // After White at (2,2): lots of flips
-        
+        printBoard();
+
         vm.prank(playerBlack);
         game.makeMove(3, 2);
-        
+
+        printBoard();
+
         vm.prank(playerWhite);
         game.makeMove(2, 2);
-        
+
+        printBoard();
+
         // Verify the board state after both moves
         assertEq(game.board(toIndex(3, 2)), BLACK);
         assertEq(game.board(toIndex(2, 2)), WHITE);
@@ -118,10 +158,10 @@ contract OthelloTest is Test {
         // Play out a legal sequence that ends with an edge-adjacent capture.
         vm.prank(playerBlack);
         game.makeMove(3, 2);
-        
+
         vm.prank(playerWhite);
         game.makeMove(2, 2);
-        
+
         vm.prank(playerBlack);
         game.makeMove(2, 3);
 
@@ -130,7 +170,7 @@ contract OthelloTest is Test {
 
         vm.prank(playerBlack);
         game.makeMove(5, 1);
-        
+
         // Edge capture should succeed and flip the diagonal white piece.
         assertEq(game.board(toIndex(5, 1)), BLACK);
         assertEq(game.board(toIndex(4, 2)), BLACK);
@@ -149,8 +189,97 @@ contract OthelloTest is Test {
         game.makeMove(255, 255); // Will be out of bounds
     }
 
-    // Helper function to match Othello contract
-    function toIndex(uint8 x, uint8 y) internal pure returns (uint8) {
-        return uint8(y * 8 + x);
+    function test_LongChainFlip() public {
+        uint8[64] memory b;
+
+        b[toIndex(0, 3)] = BLACK;
+        for (uint8 x = 1; x < 7; x++) {
+            b[toIndex(x, 3)] = WHITE;
+        }
+
+        game.setBoard(b);
+        game.setCurrentPlayer(BLACK);
+
+        printBoard();
+
+        vm.prank(playerBlack);
+        game.makeMove(7, 3);
+
+        printBoard();
+
+        for (uint8 x = 1; x < 7; x++) {
+            assertEq(game.board(toIndex(x, 3)), BLACK);
+        }
+    }
+
+    function test_MultiDirectionFlip() public {
+        uint8[64] memory b;
+
+        // Center empty
+        // Surrounding whites
+        b[toIndex(2, 3)] = WHITE;
+        b[toIndex(4, 3)] = WHITE;
+        b[toIndex(3, 2)] = WHITE;
+        b[toIndex(3, 4)] = WHITE;
+        b[toIndex(2, 2)] = WHITE;
+        b[toIndex(4, 4)] = WHITE;
+
+        // Closing blacks
+        b[toIndex(1, 3)] = BLACK;
+        b[toIndex(5, 3)] = BLACK;
+        b[toIndex(3, 1)] = BLACK;
+        b[toIndex(3, 5)] = BLACK;
+        b[toIndex(1, 1)] = BLACK;
+        b[toIndex(5, 5)] = BLACK;
+
+        game.setBoard(b);
+        game.setCurrentPlayer(BLACK);
+
+        printBoard();
+
+        vm.prank(playerBlack);
+        game.makeMove(3, 3);
+
+        printBoard();
+
+        assertEq(game.board(toIndex(2, 3)), BLACK);
+        assertEq(game.board(toIndex(4, 3)), BLACK);
+        assertEq(game.board(toIndex(3, 2)), BLACK);
+        assertEq(game.board(toIndex(3, 4)), BLACK);
+        assertEq(game.board(toIndex(2, 2)), BLACK);
+        assertEq(game.board(toIndex(4, 4)), BLACK);
+    }
+
+    function test_NoFlipWithoutClosingPiece() public {
+        uint8[64] memory b;
+
+        b[toIndex(0, 0)] = WHITE;
+        b[toIndex(1, 0)] = WHITE;
+
+        game.setBoard(b);
+        game.setCurrentPlayer(BLACK);
+
+        vm.prank(playerBlack);
+        vm.expectRevert("Invalid move");
+        game.makeMove(2, 0);
+    }
+
+    function test_SkipTurnWhenOpponentHasNoMoves() public {
+        uint8[64] memory b;
+
+        for (uint8 i = 0; i < 64; i++) {
+            b[i] = BLACK;
+        }
+
+        b[toIndex(3, 3)] = WHITE;
+        b[toIndex(2, 3)] = EMPTY;
+
+        game.setBoard(b);
+        game.setCurrentPlayer(BLACK);
+
+        vm.prank(playerBlack);
+        game.makeMove(2, 3);
+
+        assertEq(game.currentPlayer(), BLACK);
     }
 }
