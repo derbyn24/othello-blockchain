@@ -29,6 +29,7 @@ contract Othello {
     }
 
     function makeMove(uint8 x, uint8 y) external {
+        require(!gameOver, "Game is over");
         require(x < 8 && y < 8, "Out of bounds");
         require(board[toIndex(x, y)] == EMPTY, "Space is not empty");
         require(

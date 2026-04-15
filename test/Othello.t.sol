@@ -282,4 +282,34 @@ contract OthelloTest is Test {
 
         assertEq(game.currentPlayer(), BLACK);
     }
+
+    function test_GameOverWhenBoardIsFull() public {
+        uint8[64] memory b;
+
+        // Fill board with BLACK
+        for (uint8 i = 0; i < 64; i++) {
+            b[i] = BLACK;
+        }
+
+        // Create a small valid flip scenario
+        // Row: B W .  → play at (2,0)
+        b[toIndex(1,0)] = WHITE;
+        b[toIndex(2,0)] = EMPTY;
+
+        game.setBoard(b);
+        game.setCurrentPlayer(BLACK);
+
+        printBoard(); // before
+
+        vm.prank(playerBlack);
+        game.makeMove(2,0);
+
+        printBoard(); // after
+
+        // After this move:
+        // - Board is effectively all BLACK
+        // - No valid moves for either player
+
+        assertEq(game.gameOver(), true);
+    }
 }
