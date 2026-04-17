@@ -157,6 +157,15 @@ contract Othello {
         return false;
     }
 
+    function getValidMoves(uint8 player) external view returns (bool[64] memory moves) {
+        for (uint8 i = 0; i < 64; i++) {
+            if (board[i] == EMPTY) {
+                (uint8 x, uint8 y) = toXY(i);
+                moves[i] = isValidMove(x, y, player);
+            }
+        }
+    }
+
     function getScore() public view returns (uint8 blackScore, uint8 whiteScore) {
         for (uint8 i = 0; i < 64; i++) {
             if (board[i] == BLACK) blackScore++;
@@ -173,6 +182,14 @@ contract Othello {
 
     function isGameOver() public view returns (bool) {
         return result != GameResult.Ongoing;
+    }
+
+    function getGameState()
+        external
+        view
+        returns (uint8[64] memory boardState, uint8 playerTurn, GameResult gameResult)
+    {
+        return (board, currentPlayer, result);
     }
 
     // BASIC HELPER FUNCTIONS
