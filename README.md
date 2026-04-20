@@ -2,71 +2,28 @@
 
 Created by Nick Derby & Jeremy Varghese
 
-![UI Screenshot]{images/ui_screenshot.png}
+![UI Screenshot](images/ui_screenshot.png)
 
-## Foundry
+## Deployment Instructions
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Before deploying, note that with the current configuration of our smart contract, you should NEVER use public/private keys for accounts that contain valuable assets. Only use accounts with testnet tokens.
 
-Foundry consists of:
+To deploy our Othello Smart Contract, first get the public addresses for Player Black and Player White. Store these addresses as environment variables like so:
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
-
-## Documentation
-
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
+```sh
+export PLAYER_BLACK=<player black public address>
+export PLAYER_WHITE=<player white public address>
 ```
 
-### Test
+Then, run the following command to deploy the smart contract to the chain:
 
-```shell
-$ forge test
+```sh
+forge script Deploy \
+--rpc-url <rpc url> \
+--private-key <your private key> \
+--broadcast
 ```
 
-### Format
+Upon running this command, you will be provided with the contract address, which is crucial to accessing the game in the UI.
 
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+Next, serve the UI locally. In our experience, using `python3 -m http.server 8080` works well for this purpose. Navigate to [http://localhost:8080/othello.html](http://localhost:8080/othello.html) in your browser to open the UI. Lastly, enter the RPC URL, contract address, and your private key as either player black or player white. This will allow you to make moves as the corresponding player.
