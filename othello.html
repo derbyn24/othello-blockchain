@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Othello</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        background: #f5f5f5;
+        color: #111;
+        min-height: 100vh;
+        padding: 2rem 1rem;
+      }
+      #app {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 22px;
+        font-weight: 500;
+        margin-bottom: 1.25rem;
+      }
+
+      .row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+        align-items: center;
+      }
+      .row input {
+        flex: 1;
+        font-size: 13px;
+        padding: 7px 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: #fff;
+        color: #111;
+      }
+      .row button {
+        padding: 7px 14px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: #fff;
+        cursor: pointer;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .row button:hover {
+        background: #eee;
+      }
+
+      .pk-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .pk-group label {
+        display: block;
+        font-size: 11px;
+        color: #666;
+        margin-bottom: 4px;
+      }
+      .pk-group input {
+        width: 100%;
+        font-size: 11px;
+        padding: 7px 8px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: #fff;
+        color: #111;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .stat {
+        background: #ececec;
+        border-radius: 8px;
+        padding: 10px 12px;
+        text-align: center;
+      }
+      .stat-label {
+        font-size: 11px;
+        color: #666;
+        margin-bottom: 4px;
+      }
+      .stat-value {
+        font-size: 15px;
+        font-weight: 500;
+        min-height: 22px;
+      }
+
+      .hint-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: #555;
+        margin-bottom: 14px;
+      }
+      .hint-toggle input {
+        accent-color: #3a8a3a;
+        width: 15px;
+        height: 15px;
+        cursor: pointer;
+      }
+
+      .board-wrap {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 14px;
+      }
+      .board {
+        background: #2d6a2d;
+        padding: 6px;
+        border-radius: 8px;
+        display: inline-grid;
+        grid-template-columns: repeat(8, 52px);
+        grid-template-rows: repeat(8, 52px);
+        gap: 3px;
+      }
+      .cell {
+        width: 52px;
+        height: 52px;
+        background: #3a8a3a;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+      .cell.clickable {
+        cursor: pointer;
+      }
+      .cell.clickable:hover {
+        background: #4db34d;
+      }
+      .hint-dot {
+        width: 18px;
+        height: 18px;
+        background: rgba(255, 255, 255, 0.4);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+      .piece {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        pointer-events: none;
+      }
+      .piece.black {
+        background: #111;
+        box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.15);
+      }
+      .piece.white {
+        background: #f2f2f2;
+        border: 1px solid #bbb;
+        box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .log {
+        background: #1a1a1a;
+        color: #ccc;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 12px;
+        font-family: monospace;
+        max-height: 130px;
+        overflow-y: auto;
+      }
+      .log-entry {
+        padding: 2px 0;
+        border-bottom: 1px solid #2a2a2a;
+      }
+      .log-entry:last-child {
+        border-bottom: none;
+      }
+      .log-entry.error {
+        color: #f87171;
+      }
+      .log-entry.success {
+        color: #4ade80;
+      }
+      .turn-dot {
+        display: inline-block;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        vertical-align: middle;
+        margin-right: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <h1>Othello</h1>
+
+      <div class="row">
+        <input
+          id="rpcUrl"
+          value="http://localhost:8545"
+          placeholder="RPC URL"
+        />
+        <input
+          id="contractAddr"
+          value="0x5FbDB2315678afecb367f032d93F642f64180aa3"
+          placeholder="Contract address"
+        />
+        <button onclick="refreshState()">Refresh ↺</button>
+      </div>
+
+      <div class="pk-grid">
+        <div class="pk-group">
+          <label for="pkBlack">Black private key</label>
+          <input
+            id="pkBlack"
+            type="password"
+            value="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+          />
+        </div>
+        <div class="pk-group">
+          <label for="pkWhite">White private key</label>
+          <input
+            id="pkWhite"
+            type="password"
+            value="0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+          />
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">turn</div>
+          <div class="stat-value" id="statTurn">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">black / white</div>
+          <div class="stat-value" id="statScore">— / —</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">status</div>
+          <div class="stat-value" id="statResult">—</div>
+        </div>
+      </div>
+
+      <div class="hint-toggle">
+        <input type="checkbox" id="showHints" checked />
+        <label for="showHints">show valid moves</label>
+      </div>
+
+      <div class="board-wrap">
+        <div class="board" id="board"></div>
+      </div>
+
+      <div class="log" id="log">
+        <div class="log-entry">Ready — click Refresh to load game state.</div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+
+        const RESULTS = ["Ongoing", "Black wins", "White wins", "Draw"];
+        let validMoves = new Array(64).fill(false);
+        let currentPlayer = 1;
+        let gameOver = false;
+        let boardState = new Array(64).fill(0);
+
+        // ── helpers ──────────────────────────────────────────────────────────
+
+        function getRpc() {
+          return document.getElementById("rpcUrl").value.trim();
+        }
+        function getContract() {
+          return document.getElementById("contractAddr").value.trim();
+        }
+        function getPk(p) {
+          return p === 1
+            ? document.getElementById("pkBlack").value.trim()
+            : document.getElementById("pkWhite").value.trim();
+        }
+
+        function addLog(msg, type) {
+          const el = document.getElementById("log");
+          const d = document.createElement("div");
+          d.className = "log-entry" + (type ? " " + type : "");
+          d.textContent = new Date().toLocaleTimeString() + " — " + msg;
+          el.prepend(d);
+        }
+
+        function pad64(n) {
+          return n.toString(16).padStart(64, "0");
+        }
+
+        // ── RPC ──────────────────────────────────────────────────────────────
+
+        async function rpcCall(method, params) {
+          const res = await fetch(getRpc(), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error.message);
+          return data.result;
+        }
+
+        async function ethCall(data) {
+          return rpcCall("eth_call", [{ to: getContract(), data }, "latest"]);
+        }
+
+        // ── decode helpers ────────────────────────────────────────────────────
+
+        function decodeBoard(hex) {
+          const raw = hex.slice(2);
+          return Array.from({ length: 64 }, (_, i) =>
+            parseInt(raw.slice(i * 64 + 62, i * 64 + 64), 16),
+          );
+        }
+        function decodeValidMoves(hex) {
+          const raw = hex.slice(2);
+          return Array.from(
+            { length: 64 },
+            (_, i) => parseInt(raw.slice(i * 64 + 62, i * 64 + 64), 16) === 1,
+          );
+        }
+
+        // ── UI ───────────────────────────────────────────────────────────────
+
+        window.refreshState = async function () {
+          try {
+            const hex = await ethCall("0xb7d0628b");
+            const raw = hex.slice(2);
+            boardState = decodeBoard("0x" + raw.slice(0, 64 * 64));
+            currentPlayer = parseInt(raw.slice(64 * 64 + 62, 64 * 64 + 64), 16);
+            const result = parseInt(raw.slice(64 * 65 + 62, 64 * 65 + 64), 16);
+            gameOver = result !== 0;
+
+            let black = 0,
+              white = 0;
+            boardState.forEach((v) => {
+              if (v === 1) black++;
+              else if (v === 2) white++;
+            });
+
+            const turnEl = document.getElementById("statTurn");
+            if (gameOver) {
+              turnEl.textContent = "—";
+            } else {
+              const bg = currentPlayer === 1 ? "#111" : "#f2f2f2";
+              const bdr = currentPlayer === 2 ? "border:1px solid #999;" : "";
+              turnEl.innerHTML = `<span class="turn-dot" style="background:${bg};${bdr}"></span>${currentPlayer === 1 ? "Black" : "White"}`;
+            }
+            document.getElementById("statScore").textContent =
+              black + " / " + white;
+            document.getElementById("statResult").textContent = RESULTS[result];
+
+            validMoves = !gameOver
+              ? decodeValidMoves(
+                  await ethCall("0xbee7b695" + pad64(currentPlayer)),
+                )
+              : new Array(64).fill(false);
+
+            renderBoard();
+            addLog(
+              "Refreshed — " +
+                (gameOver
+                  ? RESULTS[result]
+                  : (currentPlayer === 1 ? "Black" : "White") + " to move"),
+            );
+          } catch (e) {
+            addLog("Error: " + e.message, "error");
+          }
+        };
+
+        function renderBoard() {
+          const el = document.getElementById("board");
+          const showHints = document.getElementById("showHints").checked;
+          el.innerHTML = "";
+          for (let i = 0; i < 64; i++) {
+            const cell = document.createElement("div");
+            cell.className = "cell";
+            const x = i % 8,
+              y = Math.floor(i / 8);
+            const val = boardState[i];
+            if (val === 1 || val === 2) {
+              const p = document.createElement("div");
+              p.className = "piece " + (val === 1 ? "black" : "white");
+              cell.appendChild(p);
+            } else if (showHints && validMoves[i]) {
+              const d = document.createElement("div");
+              d.className = "hint-dot";
+              cell.appendChild(d);
+            }
+            if (!gameOver && val === 0 && validMoves[i]) {
+              cell.classList.add("clickable");
+              cell.addEventListener("click", () => makeMove(x, y));
+            }
+            el.appendChild(cell);
+          }
+        }
+
+        // ── move signing via ethers.js ────────────────────────────────────────
+
+        async function makeMove(x, y) {
+          try {
+            const pk = getPk(currentPlayer);
+            if (!pk) {
+              addLog(
+                "No private key for " +
+                  (currentPlayer === 1 ? "Black" : "White"),
+                "error",
+              );
+              return;
+            }
+
+            const wallet = new ethers.Wallet(pk);
+            const chainId = parseInt(await rpcCall("eth_chainId", []), 16);
+            const nonce = parseInt(
+              await rpcCall("eth_getTransactionCount", [
+                wallet.address,
+                "latest",
+              ]),
+              16,
+            );
+            const gasPrice = BigInt(await rpcCall("eth_gasPrice", []));
+
+            const tx = {
+              to: getContract(),
+              data: "0x5e24b0f1" + pad64(x) + pad64(y),
+              gasLimit: 2000000,
+              gasPrice,
+              nonce,
+              chainId,
+              value: 0,
+            };
+
+            const signed = await wallet.signTransaction(tx);
+            const txHash = await rpcCall("eth_sendRawTransaction", [signed]);
+            addLog(
+              "Move (" + x + "," + y + ") → " + txHash.slice(0, 18) + "...",
+              "success",
+            );
+            setTimeout(refreshState, 800);
+          } catch (e) {
+            addLog("Move failed: " + e.message, "error");
+          }
+        }
+
+        document
+          .getElementById("showHints")
+          .addEventListener("change", renderBoard);
+        renderBoard();
+        refreshState();
+      })();
+    </script>
+  </body>
+</html>
