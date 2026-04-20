@@ -207,36 +207,43 @@
     <div id="app">
       <h1>Othello</h1>
 
-      <div class="row">
-        <input
-          id="rpcUrl"
-          value="http://localhost:8545"
-          placeholder="RPC URL"
-        />
-        <input
-          id="contractAddr"
-          value="0x5FbDB2315678afecb367f032d93F642f64180aa3"
-          placeholder="Contract address"
-        />
-        <button onclick="refreshState()">Refresh ↺</button>
+      <div style="margin-bottom: 14px; font-size: 11px">
+        Once the contract has been deployed, input the RPC URL and contract
+        address. Input your private key for your chosen color (or both for
+        testing). Ensure the account associated with private key does not hold
+        real assets.
+      </div>
+
+      <div
+        style="
+          display: grid;
+          grid-template-columns: 1fr 1fr auto;
+          gap: 8px;
+          margin-bottom: 10px;
+          align-items: end;
+        "
+      >
+        <div class="pk-group">
+          <label for="rpcUrl">RPC URL</label>
+          <input id="rpcUrl" />
+        </div>
+        <div class="pk-group">
+          <label for="contractAddr">Contract address</label>
+          <input id="contractAddr" />
+        </div>
+        <button onclick="refreshState()" style="margin-bottom: 1px">
+          Refresh ↺
+        </button>
       </div>
 
       <div class="pk-grid">
         <div class="pk-group">
           <label for="pkBlack">Black private key</label>
-          <input
-            id="pkBlack"
-            type="password"
-            value="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-          />
+          <input id="pkBlack" type="password" />
         </div>
         <div class="pk-group">
           <label for="pkWhite">White private key</label>
-          <input
-            id="pkWhite"
-            type="password"
-            value="0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
-          />
+          <input id="pkWhite" type="password" />
         </div>
       </div>
 
@@ -416,6 +423,20 @@
 
         // ── move signing via ethers.js ────────────────────────────────────────
 
+        async function waitForTx(txHash) {
+          addLog("Waiting for confirmation...");
+          while (true) {
+            const receipt = await rpcCall("eth_getTransactionReceipt", [
+              txHash,
+            ]);
+            if (receipt && receipt.blockNumber) {
+              addLog("Confirmed in block " + parseInt(receipt.blockNumber, 16));
+              return;
+            }
+            await new Promise((r) => setTimeout(r, 2000));
+          }
+        }
+
         async function makeMove(x, y) {
           try {
             const pk = getPk(currentPlayer);
@@ -455,7 +476,8 @@
               "Move (" + x + "," + y + ") → " + txHash.slice(0, 18) + "...",
               "success",
             );
-            setTimeout(refreshState, 800);
+            await waitForTx(txHash);
+            refreshState();
           } catch (e) {
             addLog("Move failed: " + e.message, "error");
           }
